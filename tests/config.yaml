@@ -1,0 +1,33 @@
+credentials:
+  ldap:
+  - hostname: "domain.local"
+    name: "adldap"
+    password: "pass!!"
+    username: 'username'
+    use_ssl: False
+  archer:
+  - hostname: "mock://localhost"
+    instance: "instance"
+    name: "archer"
+    password: "password"
+    username: "username"
+script:
+- destination:
+  - archer:
+      credential: "archer"
+      query:
+        group:
+          - obj_id: 1
+  source:
+  - archer:
+      credential: "archer"
+      query:
+        group:
+          - obj_id: 1
+configuration:
+  logging:
+    stdout:
+      log_level: "info"
+    output:
+      filepath: "archertools.log"
+      log_level: "info"

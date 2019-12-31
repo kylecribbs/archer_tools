@@ -1,0 +1,16 @@
+language: python
+python:
+- 3.8
+- 3.7
+install: pip install -U tox-travis
+script: tox
+deploy:
+  provider: pypi
+  distributions: sdist bdist_wheel
+  user: kylecribbs
+  on:
+    tags: true
+    repo: kylecribbs/pyarcher
+    python: 3.7
+  password:
+    secure: EdWH2sJ3rxeUjXOB5XrR8y0NMfFssub/1DIAi1XH9kSHJF16xbecI9DrzfYvenpYvG6OCXFaTrpaR2opvf45CWNerWpQPbUyZkawNNijYDhHkzhm5oqVafV0a+Eqp5RbUI5SsdA5MwMc6zBo/Yw7wO2WlXucy+mTKhPAKP0m/boklDjTcpIn70/Ud4P1fUXEG4yQuGHWrQ3G4/2roCZBzSNOdKywUJkrz7TeEZU3TNo6qGcn8xxzD9nBKmetw3/3SbzfZjB3K5F4ulaXbYsZa6F9uynveMfdu2iSUpmgYH+nzCPgHQHZEo6oCtsXlFEJpqyuH1nxYvXEOOcH/XH57rEvraA5+U8qmuGD/WtY5zXvtW0h/TP7MUc4nY24urwsFkwoxIC0lUvQUK2Nqt6dDewj7dqBmEy6u2XG9n4mC4e1XGJsjmyFDH1ZxZCOfnaL0FpMlQcTUSygjDpBgBjLYh3mN8gcVUepsNK4HB7lt2C7PbriQ1G3Cq9HSqFFWR2eWpustXePcYk5JnD35PyfR1al8Q+Jq+70Nssw7VZu0lSN6CwHJc7IBb2XPRAZBo6vnCntrWfTQ9SfjakSztYhjSAcBcbBUiz/tWUdJ+aGJB7EXgz85iuGaF0Hf0mmaZIV9+G/r+FbRzoVPJw/WgQuKUO6f90cSGYOsDSHSW20f0c=

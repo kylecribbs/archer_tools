@@ -1,0 +1,10 @@
+ptipython
+ipython
+bandit
+tox
+pytest
+flake8
+autopep8
+pylint
+pytest-cov
+commitizen
