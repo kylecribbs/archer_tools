@@ -18,12 +18,14 @@ script:
       query:
         group:
           - obj_id: 1
+          - name: "test"
   source:
   - archer:
       credential: "archer"
       query:
         group:
           - obj_id: 1
+          - name: "test"
 configuration:
   logging:
     stdout:

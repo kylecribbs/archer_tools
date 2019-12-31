@@ -17,12 +17,15 @@ def client():
     yield client
 
 
-def test_good_config(client):
+def test_good_config():
     """Test Good Config."""
     runner = CliRunner()
-    run = runner.invoke(cli.cli, ["run"])
-    assert run.exit_code == 0
-    assert "Successfully" in run.output
+    filename = f"{os.getcwd()}/tests/config.yaml"
+    print(filename)
+    with runner.isolated_filesystem():
+        run = runner.invoke(cli.cli, ["run", "-y", filename])
+        assert run.exit_code == 0
+        assert "Successfully" in run.output
 
 
 def test_bad_config(client):
@@ -41,7 +44,7 @@ def test_command_line_interface():
     help_result = runner.invoke(cli.cli, ["--help"])
     assert help_result.exit_code == 0
     assert "--help  Show this message and exit." in help_result.output
-    schema_result = runner.invoke(cli.cli, ["schema"])
+    schema_result = runner.invoke(cli.cli, ["schema", "--metadata"])
     assert schema_result.exit_code == 0
     assert "configuration:" in schema_result.output
     version_result = runner.invoke(cli.cli, ["version"])
