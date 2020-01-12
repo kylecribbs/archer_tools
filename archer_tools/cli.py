@@ -75,6 +75,16 @@ def recurse_fields(data, metadata=False):
     type=click.File(),
     help="Specify full path and name of the yaml config file.",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="This will only run the sources and not the destinations."
+)
+@click.option(
+    "--ignore-source-failure",
+    is_flag=True,
+    help="If a source fails it will continue with the rest of them."
+)
 def run(**kwargs):
     """Console script for archer_tools.
 
@@ -88,7 +98,11 @@ def run(**kwargs):
     logger = logging.getLogger(__name__)
     try:
         archer_tools = ArcherTools()
-        archer_tools.run(kwargs['yaml'])
+        archer_tools.run(
+            kwargs['yaml'],
+            dry_run=kwargs['dry_run'],
+            ignore_source_failure=kwargs['ignore_source_failure']
+        )
     except Exception as exc:
         logger.exception(exc)
         raise click.ClickException("An error occured: %s" % exc)

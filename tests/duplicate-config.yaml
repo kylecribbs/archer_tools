@@ -27,6 +27,7 @@ script:
       query:
         group:
           - obj_id: 1
+            name: "broke"
           - name: "test"
   source:
   - ldap:

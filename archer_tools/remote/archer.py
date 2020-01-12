@@ -17,8 +17,8 @@ class ArcherCredentialSchema(DefaultCredentialSchema):
 
     username = fields.Str()
     password = fields.Str()
-    instance = fields.Str(required=True)
-    domain = fields.Str()
+    instance_name = fields.Str(required=True)
+    user_domain = fields.Str()
     cert = fields.Str()
     key = fields.Str()
 
@@ -136,10 +136,22 @@ class ArcherSrcQuerySchema(Schema):
     group = fields.Nested(ArcherSrcGroupSchema, many=True, required=True)
 
 
+class ArcherMissingUserSchema(Schema):
+    """Archer Missing User Schema."""
+
+    upper = fields.Bool(default=False, missing=False)
+    lower = fields.Bool(default=False, missing=False)
+
+
 class ArcherDestQuerySchema(Schema):
     """Archer Query Schema."""
 
     group = fields.Nested(ArcherDestGroupSchema, many=True, required=True)
+    user_missing = fields.Nested(
+        ArcherMissingUserSchema,
+        default={},
+        missing={}
+    )
 
 
 class ArcherDestSchema(Schema):
@@ -169,7 +181,6 @@ class ArcherSourceAndDestination(Destination, Source):
     def adjust_creds(**kwargs):
         """Adjust creds to the correct format for archer."""
         creds = kwargs['credential'].copy()
-        creds['instance_name'] = creds.pop("instance")
         creds['url'] = creds.pop("hostname")
         return creds
 
@@ -191,7 +202,11 @@ class ArcherSourceAndDestination(Destination, Source):
         self.logger.info("Running query for Archer")
         self.kwargs = kwargs
 
-        self.client.login()
+        resp = self.client.login().json()
+        if not resp['IsSuccessful']:
+            self.logger.error("Unable to login to Archer")
+            return []
+
         for groups in kwargs['query']['group']:
             try:
                 groups = [self.client.get_group(groups['obj_id'])]
@@ -250,10 +265,16 @@ class ArcherSourceAndDestination(Destination, Source):
             groups.append(group_obj)
         return groups
 
-    def submit_users(self):
+    def submit_users(self, override_user_list=None):
         """Submit user logic."""
         users = []
-        for user in self.kwargs['from_sources']['data']:
+        failed_users = []
+
+        user_list = self.kwargs['from_sources']['data']
+        if override_user_list:
+            user_list = override_user_list
+
+        for user in user_list:
             params = {"filter": f"UserName eq '{user}'"}
             query = self.client.query_users(params)
             try:
@@ -269,6 +290,7 @@ class ArcherSourceAndDestination(Destination, Source):
                     )
             except IndexError:
                 self.logger.error("User '%s' does not exist!", user)
+                failed_users.append(user)
                 continue
 
             if not user_obj.exists:
@@ -277,7 +299,7 @@ class ArcherSourceAndDestination(Destination, Source):
                 )
                 continue
             users.append(user_obj)
-        return users
+        return users, failed_users
 
     def submit(self, *args, **kwargs):
         """Submit OINs to destination.
@@ -292,8 +314,33 @@ class ArcherSourceAndDestination(Destination, Source):
         """
         self.logger.info("Running submit for Archer")
         self.kwargs = kwargs
-        self.client.login()
-        users = self.submit_users()
+
+        upper = kwargs['query']['user_missing']['upper']
+        lower = kwargs['query']['user_missing']['lower']
+
+        resp = self.client.login().json()
+        if not resp['IsSuccessful']:
+            self.logger.error("Unable to login to Archer")
+            return []
+
+        users, failed_users = self.submit_users()
+
+        if upper and failed_users:
+            self.logger.info("Running uppercase on failed users")
+            failed_users = [user.upper() for user in failed_users]
+            more_users, failed_users = self.submit_users(
+                override_user_list=failed_users
+            )
+            users.extend(more_users)
+
+        if lower and failed_users:
+            self.logger.info("Running lowercase on failed users")
+            failed_users = [user.lower() for user in failed_users]
+            more_users, failed_users = self.submit_users(
+                override_user_list=failed_users
+            )
+            users.extend(more_users)
+
         groups = self.submit_groups()
         for group in groups:
             users_text = [str(user.metadata['UserName']) for user in users]

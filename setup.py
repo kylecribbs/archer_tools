@@ -5,6 +5,8 @@
 
 from setuptools import find_packages, setup
 
+__version__ = "v0.3.6"
+
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
@@ -37,6 +39,6 @@ setup(
     name='archer_tools',
     packages=find_packages(exclude=['tests']),
     url='https://github.com/kylecribbs/archer_tools',
-    version='0.0.1',
+    version=__version__,
     zip_safe=False,
 )

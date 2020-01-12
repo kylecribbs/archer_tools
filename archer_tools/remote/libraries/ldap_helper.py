@@ -6,8 +6,8 @@ from typing import Iterable, Union, Dict, Optional
 from ldap3 import Connection, Server
 
 
-class LdapBase:
-    """Base class for common LDAP properities.
+class LdapHelper:
+    """LdapHelper class for common LDAP properities.
 
     Attributes:
         connection (ldap3.Connection): Yeah...
@@ -30,6 +30,7 @@ class LdapBase:
         self.base_dn = base_dn
         if not self.base_dn:
             self.base_dn = self._base
+            logging.warning("No base DN provided using %s", self.base_dn)
         self.use_ssl = use_ssl
         self.username = username
         self.password = password
@@ -40,6 +41,8 @@ class LdapBase:
             self._conn_args.update(dict(user=self.username, password=password))
         if self.use_ssl:
             self._server_args = dict(use_ssl=self.use_ssl)
+        else:
+            logging.warning("You are using an unsecure protocol!")
         self.password = None
 
     @property
@@ -88,74 +91,12 @@ class LdapBase:
             entry_dn = entries[0].entry_dn
         return entry_dn
 
-    _super_conn_args: Dict = dict(auto_bind=True)
-    _connection: Optional[Connection] = None
-    _server_args: Dict = {}
-    _server: Optional[Server] = None
-
-
-class LdapPull(LdapBase):
-    """Quick class for pulling a list of users from ldap."""
-
-    def _run_search(self, search_filter: str) -> Iterable:
-        """For internal use only.
-
-        Arguments:
-            search_filter: ldap3.Connection search filter (Ex: '(cn=temp*)')
-
-        Returns:
-            Iterable: The entries from ldap3.Connection
-
-        """
-        self.connection.search(
-            self.base_dn,
-            search_filter=search_filter,
-            attributes=self.return_attr,
-        )
-        return self.connection.entries
-
-    def get_user(self, search_attr: str, search: str) -> str:
-        """Return a single `self.resturn_attr` for a user.
-
-        Args:
-            search_attr: Attribute to search against
-            search: Attribute value matches this
-
-        Returns:
-            str: Returns the requested attribute from ldap,
-                 see self.return_attr
-
-        """
-        search_filter = f"({search_attr}={search})"
-        entries = self._run_search(search_filter)
-        return getattr(entries[0], self.return_attr).value
-
-    def get_users(self, search_attr: str, search_list: list) -> list:
-        """Return a list of `self.return_attr` for a list of users.
-
-        Args:
-            search_attr: Attribute to search against
-            search_list: list of attribute values to match against
-
-        Returns:
-            list: List of `self.return_attr` from ldap for `search_list`
-
-        """
-        search_filter = "(|%s)" % "".join(
-            [f"({search_attr}={oin})" for oin in search_list]
-        )
-        entries = self._run_search(search_filter)
-        return [getattr(entry, self.return_attr).value for entry in entries]
-
-
-class ADLdap(LdapBase):
-    """Quick class for pulling a list of users in a Group from AD."""
-
     def userlist_from_group(
             self,
             group_name: str,
             attribute: str = "employeeID",
             walk_groups: bool = True,
+            object_class: str = "user"
     ) -> list:
         """Return a list of user attributes for all users in a group.
 
@@ -177,7 +118,11 @@ class ADLdap(LdapBase):
             users = []
             for group in all_groups:
                 users.extend(
-                    self.users_in_group(group, attributes=[attribute])
+                    self.users_in_group(
+                        group,
+                        object_class=object_class,
+                        attributes=[attribute]
+                    )
                 )
             del self._covered
         else:
@@ -188,7 +133,8 @@ class ADLdap(LdapBase):
         self,
         group_dn: str,
         base_dn: Union[str, None] = None,
-        attributes: Iterable = ("employeeID"),
+        object_class: str = "user",
+        attributes: Iterable = ("employeeID")
     ) -> list:
         """Return a list of user attributes for all users in a group.
 
@@ -204,8 +150,8 @@ class ADLdap(LdapBase):
 
         """
         if base_dn is None:
-            base_dn = f"{self._base}"
-        search_filter = f"(&(objectClass=user)(memberof={group_dn}))"
+            base_dn = self.base_dn
+        search_filter = f"(&(objectClass={object_class})(memberof={group_dn}))"
         self.connection.search(
             base_dn, search_filter=search_filter, attributes=attributes
         )
@@ -234,3 +180,8 @@ class ADLdap(LdapBase):
             return groups
         else:
             return []
+
+    _super_conn_args: Dict = dict(auto_bind=True)
+    _connection: Optional[Connection] = None
+    _server_args: Dict = {}
+    _server: Optional[Server] = None

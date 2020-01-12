@@ -5,6 +5,7 @@ from typing import Dict, List, Union, Set
 from pkg_resources import iter_entry_points
 
 import yaml
+import coloredlogs
 
 from archer_tools.config_schema import ConfigSchema
 from archer_tools.errors import InvalidTypeError
@@ -89,7 +90,7 @@ class ArcherTools:
     def setup_logging(self, logging_data):
         """Sets up logging from yaml."""
         self.logger.setLevel(level=getattr(logging, "DEBUG"))
-        formatter = logging.Formatter(
+        formatter = coloredlogs.ColoredFormatter(
             '%(asctime)s: %(levelname)s: %(message)s'
         )
 
@@ -110,7 +111,12 @@ class ArcherTools:
             file_handler.setLevel(getattr(logging, loglevel))
             self.logger.addHandler(file_handler)
 
-    def run(self, filepath: Union[str, TextIOWrapper]):
+    def run(
+        self,
+        filepath: Union[str, TextIOWrapper],
+        dry_run=False,
+        ignore_source_failure=False
+    ):
         """[summary].
 
         [description]
@@ -125,11 +131,20 @@ class ArcherTools:
         logging_config = data['configuration']['logging']
         self.setup_logging(logging_config)
 
-        for script in data['script']:
-            data = self.run_sources(script["source"])
-            self.run_destinations(script["destination"], data=data)
+        for index, script in enumerate(data['script']):
+            data = self.run_sources(
+                script["source"],
+                ignore_source_failure=ignore_source_failure
+            )
+            if dry_run:
+                self.logger.info(
+                    "Sources %s found the following users %s",
+                    index, data
+                )
+            else:
+                self.run_destinations(script["destination"], data=data)
 
-    def run_sources(self, sources: List) -> Set:
+    def run_sources(self, sources: List, ignore_source_failure=False) -> Set:
         """[summary].
 
         [description]
@@ -146,7 +161,22 @@ class ArcherTools:
             for key in src.keys():
                 kwargs = src[key]
                 source_obj = self.__source_types__[key]()
-                source_data = source_obj.query(**kwargs)
+
+                try:
+                    source_data = source_obj.query(**kwargs)
+                except Exception as e:
+                    self.logger.error("Error in source %s", key)
+                    self.logger.error("Reason: %s", e)
+                    if ignore_source_failure:
+                        continue
+                    raise Exception("Source Failed!")
+
+                self.logger.info(
+                    "'%s' source found %s user(s).",
+                    key.capitalize(),
+                    len(source_data)
+                )
+                self.logger.debug("The users are: %s", source_data)
                 user_data.extend(source_data)
 
         data = set(user_data)

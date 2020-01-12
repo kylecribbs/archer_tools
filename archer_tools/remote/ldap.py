@@ -5,7 +5,7 @@ from marshmallow import Schema, fields, post_load, validate
 
 from archer_tools.credential_schema import DefaultCredentialSchema
 from archer_tools.remote.source import Source
-from archer_tools.remote.libraries.ldap_helper import ADLdap, LdapPull
+from archer_tools.remote.libraries.ldap_helper import LdapHelper
 
 
 class LdapCredentialSchema(DefaultCredentialSchema):
@@ -51,10 +51,10 @@ class LdapQuerySchema(Schema):
 
     groups = fields.Nested(LdapGroupSchema, required=True, many=True)
     kind = fields.Str(
-        default="Active Directory",
-        missing="Active Directory",
+        default="active directory",
+        missing="active directory",
         validate=validate.OneOf(
-            ["Active Directory", "ad", "OpenLdap", "ldap"]
+            ["active directory", "ad", "openldap", "ldap"]
         ),
     )
 
@@ -81,10 +81,14 @@ class LdapSource(Source):
         if not self._client:
             creds = self.adjust_creds(**self.kwargs)
             kind = self.kwargs['query']['kind'].lower()
+            self._client = LdapHelper(**creds)
+
             if "ad" in kind or "active" in kind:
-                self._client = ADLdap(**creds)
+                self.object_class = "user"
             elif "ldap" in kind:
-                self._client = LdapPull(**creds)
+                self.object_class = "inetOrgPerson"
+                self._client._conn_args.update(dict(auto_bind=True))
+
         return self._client
 
     @staticmethod
@@ -103,12 +107,12 @@ class LdapSource(Source):
         """
         self.logger.info("Running query for Ldap")
         self.kwargs = kwargs
-
         users = []
         for group in self.kwargs['query']['groups']:
             users.extend(self.client.userlist_from_group(
                 group['name'],
                 attribute=group['user_attribute'],
-                walk_groups=group['walk_groups']
+                walk_groups=group['walk_groups'],
+                object_class=self.object_class
             ))
         return users

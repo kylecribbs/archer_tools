@@ -5,9 +5,11 @@ import os
 
 import pytest
 from click.testing import CliRunner
+from unittest.mock import patch
 
 import marshmallow
 from archer_tools import ArcherTools, cli
+from ldap3 import Server, Connection, MOCK_SYNC
 
 
 @pytest.fixture
@@ -17,15 +19,36 @@ def client():
     yield client
 
 
-def test_good_config():
+@patch(
+    'archer_tools.remote.libraries.ldap_helper.LdapHelper'
+)
+def test_good_config(MockLdapHelper):
     """Test Good Config."""
+    ldap_helper = MockLdapHelper()
+    ldap_helper.userlist_from_group.return_value = ["test"]
     runner = CliRunner()
     filename = f"{os.getcwd()}/tests/config.yaml"
-    print(filename)
     with runner.isolated_filesystem():
         run = runner.invoke(cli.cli, ["run", "-y", filename])
         assert run.exit_code == 0
         assert "Successfully" in run.output
+
+        run = runner.invoke(cli.cli, ["run", "-y", filename, "--dry-run"])
+        assert run.exit_code == 0
+
+
+@patch(
+    'archer_tools.remote.libraries.ldap_helper.LdapHelper'
+)
+def test_duplicate_config(MockLdapHelper):
+    """Test Good Config."""
+    ldap_helper = MockLdapHelper()
+    ldap_helper.userlist_from_group.return_value = ["test"]
+    runner = CliRunner()
+    filename = f"{os.getcwd()}/tests/duplicate-config.yaml"
+    with runner.isolated_filesystem():
+        run = runner.invoke(cli.cli, ["run", "-y", filename])
+        assert run.exit_code == 1
 
 
 def test_bad_config(client):

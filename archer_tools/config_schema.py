@@ -111,7 +111,7 @@ class StdoutSchema(Schema):
 
     log_level = fields.Str(
         validate=validate.OneOf(
-            ["debug", "info", "warning", "errors", "critical"]
+            ["debug", "info", "warning", "error", "critical"]
         ),
         default="warning",
         missing="warning"
@@ -124,7 +124,7 @@ class OutputSchema(Schema):
     filepath = fields.Str()
     log_level = fields.Str(
         validate=validate.OneOf(
-            ["debug", "info", "warning", "errors", "critical"]
+            ["debug", "info", "warning", "error", "critical"]
         ),
         default="info",
         missing="info"
