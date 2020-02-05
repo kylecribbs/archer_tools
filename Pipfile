@@ -9,13 +9,9 @@ requests = "==2.22.0"
 ldap3 = "==2.6.1"
 urllib3 = ">=1.20"
 marshmallow = "==3.2.1"
-SQLAlchemy = "==1.3.8"
 archer-tools = {path = "."}
 pyarcher = "*"
 coloredlogs = "*"
-
-[requires]
-python_version = "3.7"
 
 [dev-packages]
 ptipython = "*"

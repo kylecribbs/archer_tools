@@ -41,6 +41,7 @@ class LdapCredentialSchema(DefaultCredentialSchema):
 
 class LdapGroupSchema(Schema):
     """Ldap Query Schema."""
+
     name = fields.Str(required=True)
     walk_groups = fields.Bool(missing=True, default=True)
     user_attribute = fields.Str(missing="CN", default="CN")
