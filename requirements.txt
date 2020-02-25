@@ -4,4 +4,4 @@ ldap3==2.6.1
 urllib3>=1.20
 marshmallow==3.5.0
 PyYAML==5.3
-pyarcher
+pyarcher==0.6.1
