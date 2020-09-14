@@ -1,7 +1,7 @@
 Click==7.0
-requests==2.22.0
+requests==2.23.0
 ldap3==2.6.1
 urllib3>=1.20
-marshmallow==3.2.1
-PyYAML==5.2
-pyarcher
+marshmallow==3.5.0
+PyYAML==5.3
+pyarcher==0.6.1
