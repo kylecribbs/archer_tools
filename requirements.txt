@@ -1,4 +1,4 @@
-Click==7.0
+Click==8.0.1
 requests==2.23.0
 ldap3==2.6.1
 urllib3>=1.20
