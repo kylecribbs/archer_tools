@@ -7,4 +7,4 @@ flake8==3.7.9
 autopep8==1.5
 pylint==2.4.4
 pytest-cov==2.8.1
-commitizen==1.16.3
+commitizen==3.4.0
